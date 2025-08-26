@@ -16,11 +16,11 @@ num_attentions = 32         # number of attention maps
 beta = 5e-2                 # param for update feature centers
 
 visual_path = None  # './vis-cub-inception-cf/'  # None
-
+single_image_path = 'images/90004d17.jpg'
 ##################################################
 # Dataset/Path Config
 ##################################################
-tag = 'aircraft'                # 'aircraft', 'bird', 'car', or 'dog'
+tag = 'ndtwin'                # 'aircraft', 'bird', 'car', or 'dog'
 
 # checkpoint model for resume training
-ckpt = './FGVC/aircraft/wsdan-res101-cal/model_bestacc.pth'
+ckpt = '/kaggle/input/nd-twin-448/model_best_verify.pth'

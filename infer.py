@@ -72,7 +72,9 @@ def main():
 
     if config.visual_path is not None:
         visualize(data_loader=validate_loader, net=net)
-    test(data_loader=validate_loader, net=net)
+    
+    visualize_single_image(config.single_image_path, net)
+    # test(data_loader=validate_loader, net=net)
 
 def visualize(**kwargs):
     data_loader = kwargs['data_loader']
@@ -119,6 +121,51 @@ def visualize(**kwargs):
 
             print('iter %d / %d done!' % (i, len(data_loader)))
 
+def visualize_single_image(image_path, net, save_path="./single_vis/"):
+    """Visualize attention map for a single image"""
+    import torch
+    from PIL import Image
+    from torchvision import transforms
+    from utils import get_transform_ndtwin
+    
+    # Create save directory
+    if not os.path.exists(save_path):
+        os.makedirs(save_path)
+    
+    # Load and transform the image
+    transform = get_transform_ndtwin()
+    image = Image.open(image_path).convert('RGB')
+    image_tensor = transform(image).unsqueeze(0).to(device)  # Add batch dimension
+    
+    net.eval()
+    with torch.no_grad():
+        # Get attention maps
+        p, attention_maps = net.visualize(image_tensor)
+        attention_maps = torch.max(attention_maps, dim=1, keepdim=True)[0]
+        attention_maps = F.upsample_bilinear(attention_maps, size=(image_tensor.size(2), image_tensor.size(3)))
+        attention_maps = torch.sqrt(attention_maps.cpu() / attention_maps.max().item())
+        
+        # Generate heatmap
+        heat_attention_maps = generate_heatmap(attention_maps)
+        
+        # Denormalize image
+        raw_image = image_tensor.cpu() * STD + MEAN
+        heat_attention_image = raw_image * 0.5 + heat_attention_maps * 0.5
+        raw_attention_image = raw_image * attention_maps
+        
+        # Save images
+        base_name = os.path.splitext(os.path.basename(image_path))[0]
+        
+        rimg = ToPILImage(raw_image[0])
+        haimg = ToPILImage(heat_attention_image[0])
+        raimg = ToPILImage(raw_attention_image[0])
+        
+        rimg.save(os.path.join(save_path, f'{base_name}_raw.jpg'))
+        haimg.save(os.path.join(save_path, f'{base_name}_heat_attention.jpg'))
+        raimg.save(os.path.join(save_path, f'{base_name}_raw_attention.jpg'))
+        
+        print(f"Visualizations saved to {save_path}")
+        return attention_maps, heat_attention_maps
 
 def test(**kwargs):
     # Retrieve training configuration
