@@ -61,7 +61,7 @@ def main():
     start_epoch = 0
     net = WSDAN_CAL(num_classes=num_classes, M=config.num_attentions, net=config.net, pretrained=True)
 
-    checkpoint = torch.load(config.ckpt)
+    checkpoint = torch.load(config.ckpt, weights_only=False)
     state_dict = checkpoint['state_dict']
     net.load_state_dict(state_dict)
     print('Network loaded from {}'.format(config.ckpt))
