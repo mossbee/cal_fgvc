@@ -75,6 +75,7 @@ def main():
     
     # visualize_single_image(config.single_image_path, net)
     visualize_folder_images(config.folder_path, net)
+    extract_embeddings_and_similarity('images/srv1_2_448.jpg', 'images/srv2_1_448.jpg')
 
     # test(data_loader=validate_loader, net=net)
 
@@ -237,6 +238,87 @@ def visualize_folder_images(folder_path, net, save_path="./folder_vis/"):
                 continue
     
     print(f"All visualizations saved to {save_path}")
+
+def extract_embeddings_and_similarity(image_path1, image_path2, similarity_metrics=['cosine']):
+    """
+    Extract feature embeddings from two images and calculate various similarity metrics
+    
+    Args:
+        image_path1 (str): Path to first image
+        image_path2 (str): Path to second image  
+        net: Trained WSDAN_CAL model
+        similarity_metrics (list): List of similarity metrics to compute
+        
+    Returns:
+        dict: Dictionary containing embeddings and similarity scores
+    """
+    from PIL import Image
+    from utils import get_transform_ndtwin, compute_cosine_similarity
+    import torch.nn.functional as F
+
+    num_classes = 347
+
+    net = WSDAN_CAL(num_classes=num_classes, M=config.num_attentions, net=config.net, pretrained=True)
+    checkpoint = torch.load(config.ckpt, weights_only=False)
+    state_dict = checkpoint['state_dict']
+    net.load_state_dict(state_dict)
+    print('Network loaded from {}'.format(config.ckpt))
+
+    net.to(device)
+    if torch.cuda.device_count() > 1:
+        net = nn.DataParallel(net)
+    # Load transform
+    transform = get_transform_ndtwin()
+    
+    # Load and transform images
+    try:
+        image1 = Image.open(image_path1).convert('RGB')
+        image2 = Image.open(image_path2).convert('RGB')
+    except Exception as e:
+        print(f"Error loading images: {str(e)}")
+        return None
+    
+    image1_tensor = transform(image1).unsqueeze(0).to(device)  # Add batch dimension
+    image2_tensor = transform(image2).unsqueeze(0).to(device)  # Add batch dimension
+    
+    net.eval()
+    results = {}
+    
+    with torch.no_grad():
+        # Extract features for both images
+        # Model outputs: y_pred_raw, y_pred_aux, feature_matrix, attention_map
+        y_pred1, y_pred_aux1, feature_matrix1, attention_map1 = net(image1_tensor)
+        y_pred2, y_pred_aux2, feature_matrix2, attention_map2 = net(image2_tensor)
+        
+        # Store embeddings (feature_matrix is the actual embedding)
+        results['embedding1'] = feature_matrix1.cpu().numpy()
+        results['embedding2'] = feature_matrix2.cpu().numpy()
+        results['embedding_dim'] = feature_matrix1.shape[1]
+        
+        # Store predictions
+        results['prediction1'] = torch.softmax(y_pred1, dim=1).cpu().numpy()
+        results['prediction2'] = torch.softmax(y_pred2, dim=1).cpu().numpy()
+        results['predicted_class1'] = torch.argmax(y_pred1, dim=1).item()
+        results['predicted_class2'] = torch.argmax(y_pred2, dim=1).item()
+        results['confidence1'] = torch.max(torch.softmax(y_pred1, dim=1)).item()
+        results['confidence2'] = torch.max(torch.softmax(y_pred2, dim=1)).item()
+        
+        # Calculate similarity metrics
+        similarities = {}
+        
+        if 'cosine' in similarity_metrics:
+            # Using the same function as in training - this uses feature_matrix
+            cosine_sim = compute_cosine_similarity(feature_matrix1, feature_matrix2)
+            similarities['cosine'] = cosine_sim.item()
+        
+        results['similarities'] = similarities
+        print(results)
+        
+        # Additional information
+        results['image1_path'] = image_path1
+        results['image2_path'] = image_path2
+        
+        return results
 
 def test(**kwargs):
     # Retrieve training configuration
