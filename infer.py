@@ -52,7 +52,7 @@ def main():
 
     validate_loader = DataLoader(validate_dataset, batch_size=config.batch_size, shuffle=False,
                                                num_workers=config.workers, pin_memory=True)
-    num_classes = 200
+    num_classes = 347
 
     ##################################
     # Initialize model
@@ -73,7 +73,9 @@ def main():
     if config.visual_path is not None:
         visualize(data_loader=validate_loader, net=net)
     
-    visualize_single_image(config.single_image_path, net)
+    # visualize_single_image(config.single_image_path, net)
+    visualize_folder_images(config.folder_path, net)
+
     # test(data_loader=validate_loader, net=net)
 
 def visualize(**kwargs):
@@ -166,6 +168,75 @@ def visualize_single_image(image_path, net, save_path="./single_vis/"):
         
         print(f"Visualizations saved to {save_path}")
         return attention_maps, heat_attention_maps
+
+def visualize_folder_images(folder_path, net, save_path="./folder_vis/"):
+    """Visualize attention maps for all images in a folder"""
+    import torch
+    from PIL import Image
+    from torchvision import transforms
+    from utils import get_transform_ndtwin
+    import glob
+    
+    # Create save directory
+    if not os.path.exists(save_path):
+        os.makedirs(save_path)
+    
+    # Get all image files in the folder
+    image_extensions = ['*.jpg', '*.jpeg', '*.png', '*.bmp', '*.tiff']
+    image_files = []
+    for ext in image_extensions:
+        image_files.extend(glob.glob(os.path.join(folder_path, ext)))
+        image_files.extend(glob.glob(os.path.join(folder_path, ext.upper())))
+    
+    if not image_files:
+        print(f"No image files found in {folder_path}")
+        return
+    
+    print(f"Found {len(image_files)} images to process")
+    
+    # Load transform
+    transform = get_transform_ndtwin()
+    
+    net.eval()
+    with torch.no_grad():
+        for idx, image_path in enumerate(image_files):
+            try:
+                print(f"Processing {idx+1}/{len(image_files)}: {os.path.basename(image_path)}")
+                
+                # Load and transform the image
+                image = Image.open(image_path).convert('RGB')
+                image_tensor = transform(image).unsqueeze(0).to(device)  # Add batch dimension
+                
+                # Get attention maps
+                p, attention_maps = net.visualize(image_tensor)
+                attention_maps = torch.max(attention_maps, dim=1, keepdim=True)[0]
+                attention_maps = F.upsample_bilinear(attention_maps, size=(image_tensor.size(2), image_tensor.size(3)))
+                attention_maps = torch.sqrt(attention_maps.cpu() / attention_maps.max().item())
+                
+                # Generate heatmap
+                heat_attention_maps = generate_heatmap(attention_maps)
+                
+                # Denormalize image
+                raw_image = image_tensor.cpu() * STD + MEAN
+                heat_attention_image = raw_image * 0.5 + heat_attention_maps * 0.5
+                raw_attention_image = raw_image * attention_maps
+                
+                # Save images
+                base_name = os.path.splitext(os.path.basename(image_path))[0]
+                
+                rimg = ToPILImage(raw_image[0])
+                haimg = ToPILImage(heat_attention_image[0])
+                raimg = ToPILImage(raw_attention_image[0])
+                
+                rimg.save(os.path.join(save_path, f'{base_name}_raw.jpg'))
+                haimg.save(os.path.join(save_path, f'{base_name}_heat_attention.jpg'))
+                raimg.save(os.path.join(save_path, f'{base_name}_raw_attention.jpg'))
+                
+            except Exception as e:
+                print(f"Error processing {image_path}: {str(e)}")
+                continue
+    
+    print(f"All visualizations saved to {save_path}")
 
 def test(**kwargs):
     # Retrieve training configuration

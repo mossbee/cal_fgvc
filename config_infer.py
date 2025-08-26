@@ -17,6 +17,7 @@ beta = 5e-2                 # param for update feature centers
 
 visual_path = None  # './vis-cub-inception-cf/'  # None
 single_image_path = 'images/90004d17.jpg'
+folder_path = 'images'
 ##################################################
 # Dataset/Path Config
 ##################################################
