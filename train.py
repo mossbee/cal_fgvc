@@ -66,7 +66,7 @@ def main():
 
     if config.ckpt and os.path.isfile(config.ckpt):
         # Load ckpt and get state_dict
-        checkpoint = torch.load(config.ckpt)
+        checkpoint = torch.load(config.ckpt, weights_only=False)
 
         # Get epoch and some logs
         logs = checkpoint['logs']
@@ -74,7 +74,7 @@ def main():
 
         # Load weights
         state_dict = checkpoint['state_dict']
-        net.load_state_dict(state_dict)
+        net.load_state_dict(state_dict, strict=False)
         logging.info('Network loaded from {}'.format(config.ckpt))
         print('Network loaded from {} @ {} epoch'.format(config.ckpt, start_epoch))
 
