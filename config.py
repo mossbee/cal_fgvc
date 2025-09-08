@@ -20,7 +20,7 @@ beta = 5e-2                 # param for update feature centers
 tag = 'ndtwin'                # 'aircraft', 'bird', 'car', or 'dog'
 
 # saving directory of .ckpt models
-save_dir = './NDTWIN/wsdan-resnet101-cal/'
+save_dir = './CelebA/wsdan-resnet101-cal/'
 model_name = 'model.ckpt'
 log_name = 'train.log'
 
