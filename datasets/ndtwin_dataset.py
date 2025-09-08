@@ -11,7 +11,7 @@ image_label = {}
 
 
 class NDTwinDataset(Dataset):
-    def __init__(self, phase='train'):
+    def __init__(self, phase='train', resize=(448, 448)):
         self.phase = phase
         self.image_id = []
         self.num_classes = 6213 # 347
@@ -31,7 +31,7 @@ class NDTwinDataset(Dataset):
                 image_label[id] = int(label)
 
         # transform
-        self.transform = get_transform_ndtwin()
+        self.transform = get_transform_ndtwin(resize)
 
     def __getitem__(self, item):
         # get image id
@@ -49,7 +49,7 @@ class NDTwinDataset(Dataset):
         return len(self.image_id)
 
 class NDTwinVerificationDataset(Dataset):
-    def __init__(self):
+    def __init__(self, resize=(448, 448)):
         self.data_path = DATAPATH
         self.pairs = []
         self.unique_images = set()
@@ -65,7 +65,7 @@ class NDTwinVerificationDataset(Dataset):
                     self.unique_images.add(img2_path)
         
         # Transform for test images (no augmentation for testing)
-        self.transform = get_transform_ndtwin()
+        self.transform = get_transform_ndtwin(resize)
         
         # Cache for loaded images to avoid duplicate loading
         self.image_cache = {}

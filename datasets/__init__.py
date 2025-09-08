@@ -12,6 +12,6 @@ def get_trainval_datasets(tag, resize):
     elif tag == 'car':
         return CarDataset(phase='train', resize=resize), CarDataset(phase='val', resize=resize)
     elif tag == 'ndtwin':
-        return NDTwinDataset(phase='train'), NDTwinVerificationDataset()
+        return NDTwinDataset(phase='train', resize=resize), NDTwinVerificationDataset(resize=resize)
     else:
         raise ValueError('Unsupported Tag {}'.format(tag))
