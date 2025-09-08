@@ -14,7 +14,7 @@ class NDTwinDataset(Dataset):
     def __init__(self, phase='train'):
         self.phase = phase
         self.image_id = []
-        self.num_classes = 347
+        self.num_classes = 6213 # 347
 
         # get image path from images.txt
         with open(os.path.join(DATAPATH, 'images.txt')) as f:
