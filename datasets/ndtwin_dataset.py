@@ -4,8 +4,8 @@ from PIL import Image
 from torch.utils.data import Dataset
 from utils import get_transform_ndtwin
 
-DATAPATH = '/kaggle/input/celeba-448'
-# DATAPATH = '/kaggle/input/nd-twin-448'
+# DATAPATH = '/kaggle/input/celeba-448'
+DATAPATH = '/kaggle/input/nd-twin-448'
 image_path = {}
 image_label = {}
 
