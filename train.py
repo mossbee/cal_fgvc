@@ -138,7 +138,8 @@ def main():
 
         torch.cuda.synchronize()
         callback.on_epoch_end(logs, net, feature_center=feature_center)
-        save_model(net, logs, 'model_last.pth')
+        if (epoch + 1) % 5 == 0:
+            save_model(net, logs, 'model_last.pth')
         pbar.close()
 
 def verify_evaluate(**kwargs):
