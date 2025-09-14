@@ -2,9 +2,9 @@
 # Training Config
 ##################################################
 workers = 1                 # number of Dataloader workers
-epochs = 40                # number of epochs
+epochs = 140                # number of epochs
 batch_size = 8             # batch size
-learning_rate = 1e-3        # initial learning rate
+learning_rate = 8e-4        # initial learning rate
 
 ##################################################
 # Model Config
