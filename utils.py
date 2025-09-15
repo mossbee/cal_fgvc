@@ -268,10 +268,14 @@ def get_transform(resize, phase='train'):
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
         ])
 
+# def get_transform_ndtwin(resize):
+#     return transforms.Compose([transforms.ColorJitter(brightness=0.126, saturation=0.5),
+#         transforms.Resize(size=(int(resize[0]), int(resize[1])),),
+#         transforms.ToTensor(),
+#         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+#     ])
+
 def get_transform_ndtwin(resize):
-    return transforms.Compose([transforms.ColorJitter(brightness=0.126, saturation=0.5),
-        transforms.Resize(size=(int(resize[0]), int(resize[1])),),
-        transforms.ToTensor(),
+    return transforms.Compose([        transforms.ToTensor(),
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     ])
-
