@@ -275,7 +275,7 @@ def get_transform(resize, phase='train'):
 #         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 #     ])
 
-def get_transform_ndtwin(resize):
+def get_transform_ndtwin():
     return transforms.Compose([        transforms.ToTensor(),
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     ])
