@@ -2,7 +2,7 @@
 # Training Config
 ##################################################
 workers = 1                 # number of Dataloader workers
-epochs = 40                # number of epochs
+epochs = 80                # number of epochs
 batch_size = 8             # batch size
 learning_rate = 8e-4        # initial learning rate
 
@@ -25,6 +25,6 @@ model_name = 'model.ckpt'
 log_name = 'train.log'
 
 # checkpoint model for resume training
-ckpt = '/kaggle/input/celeba-448/model_last.pth'
+# ckpt = '/kaggle/input/celeba-448/model_last.pth'
 # ckpt = save_dir + model_name
-# ckpt = None
+ckpt = None
