@@ -31,7 +31,7 @@ class NDTwinDataset(Dataset):
                 image_label[id] = int(label)
 
         # transform
-        self.transform = get_transform_ndtwin(resize)
+        self.transform = get_transform_ndtwin()
 
     def __getitem__(self, item):
         # get image id
@@ -65,7 +65,7 @@ class NDTwinVerificationDataset(Dataset):
                     self.unique_images.add(img2_path)
         
         # Transform for test images (no augmentation for testing)
-        self.transform = get_transform_ndtwin(resize)
+        self.transform = get_transform_ndtwin()
         
         # Cache for loaded images to avoid duplicate loading
         self.image_cache = {}
