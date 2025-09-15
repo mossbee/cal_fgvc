@@ -24,4 +24,4 @@ folder_path = 'images'
 tag = 'ndtwin'                # 'aircraft', 'bird', 'car', or 'dog'
 
 # checkpoint model for resume training
-ckpt = '/kaggle/input/nd-twin-448/model_best_verify.pth'
+ckpt = '/kaggle/input/nd-twin-448/model_last_sept_15.pth'
