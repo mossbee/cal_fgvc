@@ -8,7 +8,7 @@ from pathlib import Path
 
 # DATAPATH = '/kaggle/input/celeba-448'
 DATAPATH = '/kaggle/input/nd-twin-448'
-LANDMARKS_MASK_PATH = '/kaggle/input/landmarks_masks/landmarks_masks'  # Kaggle dataset path
+LANDMARKS_MASK_PATH = '/kaggle/input/nd-twin-448/landmarks_masks'  # Kaggle dataset path
 
 image_path = {}
 image_label = {}
