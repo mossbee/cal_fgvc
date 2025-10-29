@@ -34,4 +34,5 @@ log_name = 'train.log'
 # checkpoint model for resume training
 # ckpt = '/kaggle/input/celeba-448/model_last.pth'
 # ckpt = save_dir + model_name
+ckpt = None
 # ckpt = '/kaggle/input/nd-twin-448/model_last_sept_15.pth'
