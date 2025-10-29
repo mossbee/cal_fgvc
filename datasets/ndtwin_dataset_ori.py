@@ -3,24 +3,18 @@ import os
 from PIL import Image
 from torch.utils.data import Dataset
 from utils import get_transform_ndtwin
-import torch
-from pathlib import Path
 
 # DATAPATH = '/kaggle/input/celeba-448'
 DATAPATH = '/kaggle/input/nd-twin-448'
-LANDMARKS_MASK_PATH = '/kaggle/input/landmarks_masks'  # Kaggle dataset path
-
 image_path = {}
 image_label = {}
 
 
 class NDTwinDataset(Dataset):
-    def __init__(self, phase='train', resize=(448, 448), use_landmarks=True):
+    def __init__(self, phase='train', resize=(448, 448)):
         self.phase = phase
         self.image_id = []
         self.num_classes = 347 #6213 #347 
-        self.use_landmarks = use_landmarks
-        self.landmarks_mask_dir = Path(LANDMARKS_MASK_PATH)
 
         # get image path from images.txt
         with open(os.path.join(DATAPATH, 'images.txt')) as f:
@@ -39,42 +33,20 @@ class NDTwinDataset(Dataset):
         # transform
         self.transform = get_transform_ndtwin()
 
-    def _load_landmark_mask(self, image_id):
-        """Load precomputed landmark mask for given image_id"""
-        # Extract filename without extension from image path
-        img_path = image_path[image_id]
-        filename = Path(img_path).stem  # e.g., '90003d13'
-        
-        mask_path = self.landmarks_mask_dir / f"{filename}.pt"
-        
-        if mask_path.exists():
-            mask = torch.load(mask_path)  # Shape: (1, H, W)
-            return mask
-        else:
-            # Return uniform mask if landmark file doesn't exist
-            # This ensures training doesn't break for missing landmarks
-            print(f"Warning: Landmark mask not found for {filename}, using uniform mask")
-            return torch.ones(1, 448, 448) * 0.5
-
     def __getitem__(self, item):
         # get image id
         image_id = self.image_id[item]
 
         # image
-        image = Image.open(os.path.join(DATAPATH, 'ND_TWIN_448', image_path[image_id])).convert('RGB')
+        # image = Image.open(os.path.join(DATAPATH, 'CelebA_HQ_448_Final', 'CelebA_HQ_448_Final', image_path[image_id])).convert('RGB')  # (C, H, W)
+        image = Image.open(os.path.join(DATAPATH, 'ND_TWIN_448', image_path[image_id])).convert('RGB')  # (C, H, W)
         image = self.transform(image)
 
-        # Load landmark mask if using guided attention and in training phase
-        if self.use_landmarks and self.phase == 'train':
-            landmark_mask = self._load_landmark_mask(image_id)
-            return image, image_label[image_id] - 1, landmark_mask
-        else:
-            # For validation or when not using landmarks
-            return image, image_label[image_id] - 1
+        # return image and label
+        return image, image_label[image_id] - 1  # count begin from zero
 
     def __len__(self):
         return len(self.image_id)
-
 
 class NDTwinVerificationDataset(Dataset):
     def __init__(self, resize=(448, 448)):
@@ -116,31 +88,9 @@ class NDTwinVerificationDataset(Dataset):
     def __len__(self):
         return len(self.pairs)
 
-
 if __name__ == '__main__':
-    # Test without landmarks
-    print("Testing dataset WITHOUT landmarks:")
-    ds = NDTwinDataset('train', use_landmarks=False)
-    print(f"Dataset size: {len(ds)}")
-    for i in range(0, 3):
-        data = ds[i]
-        if len(data) == 2:
-            image, label = data
-            print(f"Sample {i}: image shape={image.shape}, label={label}")
-        else:
-            image, label, mask = data
-            print(f"Sample {i}: image shape={image.shape}, label={label}, mask shape={mask.shape}")
-    
-    # Test with landmarks
-    print("\nTesting dataset WITH landmarks:")
-    ds_landmarks = NDTwinDataset('train', use_landmarks=True)
-    print(f"Dataset size: {len(ds_landmarks)}")
-    for i in range(0, 3):
-        data = ds_landmarks[i]
-        if len(data) == 3:
-            image, label, mask = data
-            print(f"Sample {i}: image shape={image.shape}, label={label}, mask shape={mask.shape}")
-            print(f"  Mask stats: min={mask.min():.3f}, max={mask.max():.3f}, mean={mask.mean():.3f}")
-        else:
-            image, label = data
-            print(f"Sample {i}: image shape={image.shape}, label={label} (no mask)")
+    ds = NDTwinDataset('train')
+    print(len(ds))
+    for i in range(0, 10):
+        image, label = ds[i]
+        print(image.shape, label)

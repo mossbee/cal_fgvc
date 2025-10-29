@@ -34,55 +34,6 @@ verification_metric = VerificationMetrics()
 
 best_acc = 0.0
 
-def landmark_attention_loss(attention_maps, landmark_masks):
-    """
-    Encourage attention to focus on landmark regions
-    
-    Args:
-        attention_maps: (B, M, AH, AW) - learned attention maps
-        landmark_masks: (B, 1, H, W) - binary/soft masks for important regions
-    
-    Returns:
-        loss: scalar tensor
-    """
-    B, M, AH, AW = attention_maps.shape
-    _, _, MH, MW = landmark_masks.shape
-    
-    # Resize attention maps to match mask size
-    if AH != MH or AW != MW:
-        attention_maps_resized = F.interpolate(
-            attention_maps, 
-            size=(MH, MW), 
-            mode='bilinear',
-            align_corners=False
-        )
-    else:
-        attention_maps_resized = attention_maps
-    
-    # Average across all attention heads
-    attention_avg = attention_maps_resized.mean(dim=1, keepdim=True)  # (B, 1, H, W)
-    
-    # Normalize masks to ensure they're in [0, 1]
-    landmark_masks = landmark_masks.float()
-    
-    # Compute attention on landmark regions vs non-landmark regions
-    landmark_region_attention = (attention_avg * landmark_masks).sum(dim=(1, 2, 3))
-    landmark_area = landmark_masks.sum(dim=(1, 2, 3)) + 1e-6
-    
-    non_landmark_mask = 1.0 - landmark_masks
-    non_landmark_region_attention = (attention_avg * non_landmark_mask).sum(dim=(1, 2, 3))
-    non_landmark_area = non_landmark_mask.sum(dim=(1, 2, 3)) + 1e-6
-    
-    # Normalized attention scores
-    landmark_score = landmark_region_attention / landmark_area
-    non_landmark_score = non_landmark_region_attention / non_landmark_area
-    
-    # Loss: maximize attention on landmarks, minimize on non-landmarks
-    # Using ratio loss for better stability
-    loss = -torch.log(landmark_score / (landmark_score + non_landmark_score + 1e-6))
-    
-    return loss.mean()
-
 def main():
     torch.backends.cudnn.benchmark = True
 
@@ -99,7 +50,7 @@ def main():
         level=logging.INFO)
     warnings.filterwarnings("ignore")
 
-    train_dataset, verification_dataset = get_trainval_datasets(config.tag, config.image_size, use_landmarks=config.use_landmark_guidance)
+    train_dataset, verification_dataset = get_trainval_datasets(config.tag, config.image_size)
 
     num_classes = train_dataset.num_classes
 
@@ -283,26 +234,16 @@ def train(**kwargs):
     start_time = time.time()
     net.train()
     batch_len = len(data_loader)
-    
-    for i, batch_data in enumerate(data_loader):
+    for i, (X, y) in enumerate(data_loader):
         float_iter = float(i) / batch_len
         adjust_learning(optimizer, epoch, float_iter)
         now_lr = optimizer.param_groups[0]['lr']
 
         optimizer.zero_grad()
 
-        # Unpack data - handle both with and without landmarks
-        if config.use_landmark_guidance and len(batch_data) == 3:
-            X, y, landmark_masks = batch_data
-            X = X.cuda()
-            y = y.cuda()
-            landmark_masks = landmark_masks.cuda()
-            use_landmark_loss = True
-        else:
-            X, y = batch_data if len(batch_data) == 2 else (batch_data[0], batch_data[1])
-            X = X.cuda()
-            y = y.cuda()
-            use_landmark_loss = False
+        # obtain data for training
+        X = X.cuda()
+        y = y.cuda()
 
         y_pred_raw, y_pred_aux, feature_matrix, attention_map = net(X)
 
@@ -320,35 +261,16 @@ def train(**kwargs):
         y_aug = torch.cat([y, y], dim=0)
 
         # crop images forward
-        y_pred_aug, y_pred_aux_aug, _, attention_map_aug = net(aug_images)
+        y_pred_aug, y_pred_aux_aug, _, _ = net(aug_images)
 
         y_pred_aux = torch.cat([y_pred_aux, y_pred_aux_aug], dim=0)
         y_aux = torch.cat([y, y_aug], dim=0)
 
-        # Original loss
+        # loss
         batch_loss = cross_entropy_loss(y_pred_raw, y) / 3. + \
                      cross_entropy_loss(y_pred_aux, y_aux) * 3. / 3. + \
                      cross_entropy_loss(y_pred_aug, y_aug) * 2. / 3. + \
                      center_loss(feature_matrix, feature_center_batch)
-
-        # Add landmark guidance loss
-        if use_landmark_loss:
-            # Get attention maps from the network
-            # Note: attention_map returned is (B, 2, H, W) for crop/drop
-            # We need the full attention maps - you may need to modify WSDAN_CAL
-            # to also return the full attention maps
-            with torch.no_grad():
-                feature_maps = net.features(X)
-                if net.net != 'inception_mixed_7c':
-                    full_attention_maps = net.attentions(feature_maps)  # (B, M, H, W)
-                else:
-                    full_attention_maps = feature_maps[:, :net.M, ...]
-            
-            # Simplified version: use the returned attention_map
-            lm_loss = landmark_attention_loss(full_attention_maps, landmark_masks)
-            
-            # Hyperparameter for landmark loss weight (tune this!)
-            batch_loss = batch_loss + config.landmark_loss_weight * lm_loss
 
         # backward
         batch_loss.backward()
