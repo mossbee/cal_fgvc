@@ -73,8 +73,8 @@ class NDTwinVerificationDataset(Dataset):
     def _load_image(self, img_path):
         """Load image with caching to handle duplicates efficiently"""
         if img_path not in self.image_cache:
-            # full_path = os.path.join(self.data_path, 'ND_TWIN_448', img_path)
-            full_path = os.path.join(self.data_path, 'CelebA_HQ_448_Final', 'CelebA_HQ_448_Final', img_path)
+            full_path = os.path.join(self.data_path, 'ND_TWIN_448', img_path)
+            # full_path = os.path.join(self.data_path, 'CelebA_HQ_448_Final', 'CelebA_HQ_448_Final', img_path)
             image = Image.open(full_path).convert('RGB')
             self.image_cache[img_path] = self.transform(image)
         return self.image_cache[img_path]
