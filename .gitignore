@@ -1,9 +1,7 @@
-guided_attention_idea.md
 landmarks/
 landmarks_masks/
 cal.md
 tool_viz_landmarks.py
-mask_visualization.py
 landmarks_masks.zip
 *.pyc
 __pycache__/
